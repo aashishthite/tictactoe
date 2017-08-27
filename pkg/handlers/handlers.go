@@ -35,15 +35,15 @@ func (h *Handlers) ListenAndServe() error {
 func (h *Handlers) endpoints() *mux.Router {
 	router := mux.NewRouter().StrictSlash(false)
 
-	addHandler(router, "GET", "/", h.Health)
+	addHandler(router, "POST", "/", h.Health)
 
-	addHandler(router, "GET", "/help", h.Help)
+	addHandler(router, "POST", "/help", h.Help)
 
 	addHandler(router, "POST", "/start", h.Start)
 
 	addHandler(router, "POST", "/move", h.Move)
 
-	addHandler(router, "GET", "/state", h.State)
+	addHandler(router, "POST", "/state", h.State)
 
 	//addHandler(router, "POST", "/forfiet", h.Forfiet)
 
