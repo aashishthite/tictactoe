@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	DEFAULT_PORT = ":8080"
+	DEFAULT_PORT = "8080"
 	timeout      = 15 * time.Second
 )
 
@@ -28,14 +29,19 @@ func New() *Handlers {
 }
 
 func (h *Handlers) ListenAndServe() error {
-	log.Println("Listening on port", DEFAULT_PORT)
-	return http.ListenAndServe(DEFAULT_PORT, h.endpoints())
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = DEFAULT_PORT
+	}
+	log.Println("Listening on port", port)
+	return http.ListenAndServe(":"+port, h.endpoints())
 }
 
 func (h *Handlers) endpoints() *mux.Router {
 	router := mux.NewRouter().StrictSlash(false)
 
-	addHandler(router, "POST", "/", h.Health)
+	addHandler(router, "GET", "/", h.Health)
 
 	addHandler(router, "POST", "/help", h.Help)
 
