@@ -92,6 +92,10 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 		retval = h.Help()
 	case strings.ToLower(sc.Text) == "state":
 		retval = h.State()
+	case sc.Text[0] == '@':
+		retval = h.Start(sc.UserName, sc.Text[1:len(sc.Text)])
+	case strings.ToLower(sc.Text[0:4]) == "move":
+		retval = h.Move(sc.UserName, []rune(sc.Text)[5])
 	default:
 		retval = "No Command Found"
 	}
@@ -126,7 +130,7 @@ func (h *Handlers) Help() string {
 
 func (h *Handlers) Start(user1, user2 string) string {
 
-	api := slack.New(SLACK_TOKEN)
+	api := slack.New(os.Getenv("SLACK_API_TOKEN"))
 	//check if valid user2
 	valid := false
 	users, err := api.GetUsers()
@@ -141,7 +145,13 @@ func (h *Handlers) Start(user1, user2 string) string {
 	if !valid {
 		return "Not a valid user"
 	}
-	return "Starting a game:"
+
+	state, err := h.GameEngine.Start(&core.Player{ID: user1}, &core.Player{ID: user2})
+	if err != nil {
+		return "A game is still going on"
+	}
+
+	return "Starting a game: \n" + "```" + state.GameBoard + "```" + "\n" + state.Status
 	/*
 		var postReq StartGameRequest
 
@@ -152,17 +162,17 @@ func (h *Handlers) Start(user1, user2 string) string {
 			return
 		}
 
-		state, err := h.GameEngine.Start(&core.Player{ID: postReq.Player1ID}, &core.Player{ID: postReq.Player1ID})
-		if err != nil {
-			ErrorRespondAndLog(w, r, err, "A game is still going on", http.StatusBadRequest)
-			return
-		}
+
 		json.NewEncoder(w).Encode(state)
 	*/
 }
 
-func (h *Handlers) Move(w http.ResponseWriter, r *http.Request) {
-	var postReq MoveRequest
+func (h *Handlers) Move(user string, pos rune) string {
+	state, err := h.GameEngine.Move(&core.Player{ID: user}, pos)
+	if err != nil {
+		return err.Error()
+	}
+	/*var postReq MoveRequest
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&postReq)
 	if err != nil {
@@ -178,6 +188,8 @@ func (h *Handlers) Move(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(state)
+	*/
+	return "```" + state.GameBoard + "```" + "\n" + state.Status
 }
 
 func (h *Handlers) State() string {
