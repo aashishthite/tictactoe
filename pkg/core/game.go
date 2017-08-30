@@ -30,7 +30,7 @@ func NewGame(p1, p2 *Player) *Game {
 }
 
 func (g *Game) AliceMove(pos rune) error {
-	if g.Move != g.Alice {
+	if g.Move.ID != g.Alice.ID {
 		return fmt.Errorf("Player 2's turn")
 	}
 	err := g.GameBoard.SetPosition('X', pos)
@@ -42,7 +42,7 @@ func (g *Game) AliceMove(pos rune) error {
 }
 
 func (g *Game) BobMove(pos rune) error {
-	if g.Move != g.Bob {
+	if g.Move.ID != g.Bob.ID {
 		return fmt.Errorf("Player 1's turn")
 	}
 	err := g.GameBoard.SetPosition('O', pos)

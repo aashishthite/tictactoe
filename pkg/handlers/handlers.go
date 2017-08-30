@@ -129,6 +129,9 @@ func (h *Handlers) Help() string {
 }
 
 func (h *Handlers) Start(user1, user2 string) string {
+	if user1 == user2 {
+		return "Go find friends to play tictactoe with"
+	}
 
 	api := slack.New(os.Getenv("SLACK_API_TOKEN"))
 	//check if valid user2
