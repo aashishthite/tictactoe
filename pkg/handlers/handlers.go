@@ -13,11 +13,13 @@ import (
 
 	"github.com/aashishthite/tictactoe/pkg/core"
 	"github.com/gorilla/mux"
+	"github.com/nlopes/slack"
 )
 
 const (
 	DEFAULT_PORT = "8080"
 	timeout      = 15 * time.Second
+	SLACK_TOKEN  = ""
 )
 
 type Handlers struct {
@@ -116,28 +118,47 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 
 // Help endpoint
 func (h *Handlers) Help() string {
-	return "```/ttt @userid : Starts a game" +
+	return "```/ttt @userid : Starts a game against userid" +
 		"\n" +
-		"/ttt state : Display state of the current game" +
+		"/ttt state      : Display state of the current game" +
 		"```"
 }
 
-func (h *Handlers) Start(w http.ResponseWriter, r *http.Request) {
-	var postReq StartGameRequest
+func (h *Handlers) Start(user1, user2 string) string {
 
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&postReq)
+	api := slack.New(SLACK_TOKEN)
+	//check if valid user2
+	valid := false
+	users, err := api.GetUsers()
 	if err != nil {
-		ErrorRespondAndLog(w, r, err, "Failed to decode the request body", http.StatusBadRequest)
-		return
+		return "unable to validate user"
 	}
+	for _, v := range users {
+		if user2 == v.Name {
+			valid = true
+		}
+	}
+	if !valid {
+		return "Not a valid user"
+	}
+	return "Starting a game:"
+	/*
+		var postReq StartGameRequest
 
-	state, err := h.GameEngine.Start(&core.Player{ID: postReq.Player1ID}, &core.Player{ID: postReq.Player1ID})
-	if err != nil {
-		ErrorRespondAndLog(w, r, err, "A game is still going on", http.StatusBadRequest)
-		return
-	}
-	json.NewEncoder(w).Encode(state)
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&postReq)
+		if err != nil {
+			ErrorRespondAndLog(w, r, err, "Failed to decode the request body", http.StatusBadRequest)
+			return
+		}
+
+		state, err := h.GameEngine.Start(&core.Player{ID: postReq.Player1ID}, &core.Player{ID: postReq.Player1ID})
+		if err != nil {
+			ErrorRespondAndLog(w, r, err, "A game is still going on", http.StatusBadRequest)
+			return
+		}
+		json.NewEncoder(w).Encode(state)
+	*/
 }
 
 func (h *Handlers) Move(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +183,7 @@ func (h *Handlers) Move(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) State() string {
 
 	s := h.GameEngine.GameState()
-	return s.GameBoard + "\n" + s.Status
+	return "```" + s.GameBoard + "```" + "\n" + s.Status
 }
 
 /*

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const DEFAULT_TIMEOUT = 1 * time.Minute
+const DEFAULT_TIMEOUT = 3 * time.Minute
 
 type Engine struct {
 	CurrentGame *Game

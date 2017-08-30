@@ -63,3 +63,13 @@ type AttachmentField struct {
 	Value string `json:"value"`
 	Short bool   `json:"short"`
 }
+
+type userResponseFull struct {
+	Members []User `json:"members,omitempty"`
+}
+
+// User contains all the information of a user
+type User struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
