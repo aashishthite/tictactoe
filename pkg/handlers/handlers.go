@@ -83,10 +83,18 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println(sc.Text)
+	retval := ""
+
+	switch {
+	case sc.Text == "help":
+		retval = h.Help()
+	default:
+		retval = "No Command Found"
+	}
 
 	scm := &SlashCommandMessage{
 		ResponseType: "in_channel",
-		Text:         sc.Text,
+		Text:         retval,
 		Attachments:  []Attachment{},
 	}
 
@@ -105,8 +113,8 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Help endpoint
-func (h *Handlers) Help(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "/ttt start @userid")
+func (h *Handlers) Help() string {
+	return "/ttt @userid"
 }
 
 func (h *Handlers) Start(w http.ResponseWriter, r *http.Request) {
