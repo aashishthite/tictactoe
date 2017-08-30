@@ -63,16 +63,16 @@ func (e *Engine) Move(p *Player, pos rune) (*State, error) {
 	}
 	if player := e.CurrentGame.GetWinner(); player != nil {
 		e.GameOn = false
-		log.Printf("Player: %s has won!", player.ID)
+		log.Printf("Player: %s has won!", "@"+player.ID)
 		retval := &State{
 			GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
-			Status:    fmt.Sprintf("Player: %s has won!", player.ID),
+			Status:    fmt.Sprintf("Player: %s has won!", "@"+player.ID),
 		}
 		return retval, nil
 	}
 	retval := &State{
 		GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
-		Status:    fmt.Sprintf("Player: %s 's turn to make a move'", e.CurrentGame.Move.ID),
+		Status:    fmt.Sprintf("Player: @%s 's turn to make a move", "@"+e.CurrentGame.Move.ID),
 	}
 	return retval, nil
 }
@@ -87,7 +87,7 @@ func (e *Engine) GameState() *State {
 	if e.GameOn {
 		return &State{
 			GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
-			Status:    fmt.Sprintf("Player: %s 's turn to make a move'", e.CurrentGame.Move.ID),
+			Status:    fmt.Sprintf("Player: @%s 's turn to make a move", e.CurrentGame.Move.ID),
 		}
 	}
 	return &State{

@@ -90,12 +90,16 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case strings.ToLower(sc.Text) == "help":
 		retval = h.Help()
+		break
 	case strings.ToLower(sc.Text) == "state":
 		retval = h.State()
+		break
 	case sc.Text[0] == '@':
 		retval = h.Start(sc.UserName, sc.Text[1:len(sc.Text)])
-	case strings.ToLower(sc.Text[0:4]) == "move":
+		break
+	case len(sc.Text) > 5 && strings.ToLower(sc.Text[0:4]) == "move":
 		retval = h.Move(sc.UserName, []rune(sc.Text)[5])
+		break
 	default:
 		retval = "No Command Found"
 	}
