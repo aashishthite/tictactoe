@@ -86,8 +86,10 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 	retval := ""
 
 	switch {
-	case sc.Text == "help":
+	case strings.ToLower(sc.Text) == "help":
 		retval = h.Help()
+	case strings.ToLower(sc.Text) == "state":
+		retval = h.State()
 	default:
 		retval = "No Command Found"
 	}
@@ -114,7 +116,10 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 
 // Help endpoint
 func (h *Handlers) Help() string {
-	return "/ttt @userid"
+	return "```/ttt @userid : Starts a game" +
+		"\n" +
+		"/ttt state : Display state of the current game" +
+		"```"
 }
 
 func (h *Handlers) Start(w http.ResponseWriter, r *http.Request) {
@@ -154,9 +159,10 @@ func (h *Handlers) Move(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(state)
 }
 
-func (h *Handlers) State(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(h.GameEngine.GameState())
+func (h *Handlers) State() string {
+
+	s := h.GameEngine.GameState()
+	return s.GameBoard + "\n" + s.Status
 }
 
 /*
