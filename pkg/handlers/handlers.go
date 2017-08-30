@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -42,15 +44,16 @@ func (h *Handlers) endpoints() *mux.Router {
 	router := mux.NewRouter().StrictSlash(false)
 
 	addHandler(router, "GET", "/", h.Health)
+	/*
+		addHandler(router, "POST", "/help", h.Help)
 
-	addHandler(router, "POST", "/help", h.Help)
+		addHandler(router, "POST", "/start", h.Start)
 
-	addHandler(router, "POST", "/start", h.Start)
+		addHandler(router, "POST", "/move", h.Move)
 
-	addHandler(router, "POST", "/move", h.Move)
-
-	addHandler(router, "POST", "/state", h.State)
-
+		addHandler(router, "POST", "/state", h.State)
+	*/
+	addHandler(router, "POST", "/cmd", h.cmdHandler)
 	//addHandler(router, "POST", "/forfiet", h.Forfiet)
 
 	return router
@@ -59,6 +62,46 @@ func (h *Handlers) endpoints() *mux.Router {
 // Health check endpoint
 func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "All OK")
+}
+
+func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
+	var v url.Values
+	_ = r.ParseForm()
+	v = r.Form
+
+	sc := &SlashCommand{
+		Token:       v.Get("token"),
+		TeamId:      v.Get("team_id"),
+		TeamDomain:  v.Get("team_domain"),
+		ChannelId:   v.Get("channel_id"),
+		ChannelName: v.Get("channel_name"),
+		UserId:      v.Get("user_id"),
+		UserName:    v.Get("user_name"),
+		Command:     v.Get("command"),
+		Text:        v.Get("text"),
+		ResponseURL: v.Get("response_url"),
+	}
+
+	log.Println(sc.Text)
+
+	scm := &SlashCommandMessage{
+		ResponseType: "in_channel",
+		Text:         sc.Text,
+		Attachments:  []Attachment{},
+	}
+
+	var jsonData bytes.Buffer
+	if err := json.NewEncoder(&jsonData).Encode(scm); err != nil {
+		return
+	}
+
+	cl := &http.Client{}
+	resp, err := cl.Post(sc.ResponseURL, "application/json; charset=utf-8", &jsonData)
+
+	if err != nil {
+		log.Println(err)
+	}
+	resp.Body.Close()
 }
 
 // Help endpoint
