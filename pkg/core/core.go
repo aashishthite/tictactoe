@@ -9,9 +9,9 @@ import (
 const DEFAULT_TIMEOUT = 1 * time.Minute
 
 type Engine struct {
-	CurrentGame *Game
-	GameOn      bool //use mutex
-	timer       *time.Timer
+	OngoingGames map[string]*Game
+	//GameOn       bool //use mutex
+	//timer *time.Timer
 }
 
 type State struct {
@@ -21,58 +21,64 @@ type State struct {
 
 //TODO: implement timeout
 func NewEngine() *Engine {
-	retval := &Engine{}
+	retval := &Engine{
+		OngoingGames: make(map[string]*Game),
+	}
 	return retval
 }
 
-func (e *Engine) Start(p1, p2 *Player) (*State, error) {
-	if e.GameOn {
+func (e *Engine) Start(p1, p2 *Player, channelID string) (*State, error) {
+	if _, ok := e.OngoingGames[channelID]; ok {
 		return nil, fmt.Errorf("Game is still going on")
 	}
-	e.CurrentGame = NewGame(p1, p2)
-	e.GameOn = true
-	e.timer = time.AfterFunc(DEFAULT_TIMEOUT, e.TearDown)
+	e.OngoingGames[channelID] = NewGame(p1, p2)
+	//e.timer = time.AfterFunc(DEFAULT_TIMEOUT, e.TearDown)
 
 	retval := &State{
-		GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
+		GameBoard: e.OngoingGames[channelID].GameBoard.PrettyPrint(),
 		Status:    fmt.Sprintf("Player: %s 's turn to make a move", p1.ID),
 	}
 	return retval, nil
 }
 
-func (e *Engine) Move(p *Player, pos rune) (*State, error) {
+func (e *Engine) Move(p *Player, pos rune, channelID string) (*State, error) {
+	currentGame, ok := e.OngoingGames[channelID]
+	if !ok {
+		return &State{}, fmt.Errorf("Game does not exist")
+	}
 	var err error
-	if p.ID == e.CurrentGame.Alice.ID {
-		err = e.CurrentGame.AliceMove(pos)
-	} else if p.ID == e.CurrentGame.Bob.ID {
-		err = e.CurrentGame.BobMove(pos)
+	if p.ID == currentGame.Alice.ID {
+		err = currentGame.AliceMove(pos)
+	} else if p.ID == currentGame.Bob.ID {
+		err = currentGame.BobMove(pos)
 	} else {
 		err = fmt.Errorf("Invalid Player")
 	}
 	if err != nil {
 		return nil, err
 	}
-	if e.CurrentGame.IsTie() {
-		e.GameOn = false
+	if currentGame.IsTie() {
 		log.Printf("Game is a tie.")
 		retval := &State{
-			GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
+			GameBoard: currentGame.GameBoard.PrettyPrint(),
 			Status:    "Game is a tie.",
 		}
+		delete(e.OngoingGames, channelID)
 		return retval, nil
 	}
-	if player := e.CurrentGame.GetWinner(); player != nil {
-		e.GameOn = false
+	if player := currentGame.GetWinner(); player != nil {
+
 		log.Printf("Player: %s has won!", "@"+player.ID)
 		retval := &State{
-			GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
+			GameBoard: currentGame.GameBoard.PrettyPrint(),
 			Status:    fmt.Sprintf("Player: %s has won!", "@"+player.ID),
 		}
+		delete(e.OngoingGames, channelID)
 		return retval, nil
 	}
 	retval := &State{
-		GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
-		Status:    fmt.Sprintf("Player: @%s 's turn to make a move", "@"+e.CurrentGame.Move.ID),
+		GameBoard: currentGame.GameBoard.PrettyPrint(),
+		Status:    fmt.Sprintf("Player: @%s 's turn to make a move", currentGame.Move.ID),
 	}
 	return retval, nil
 }
@@ -83,11 +89,11 @@ func (e *Engine) Forfiet(p *Player) {
 }
 */
 
-func (e *Engine) GameState() *State {
-	if e.GameOn {
+func (e *Engine) GameState(channelID string) *State {
+	if v, ok := e.OngoingGames[channelID]; ok {
 		return &State{
-			GameBoard: e.CurrentGame.GameBoard.PrettyPrint(),
-			Status:    fmt.Sprintf("Player: @%s 's turn to make a move", e.CurrentGame.Move.ID),
+			GameBoard: v.GameBoard.PrettyPrint(),
+			Status:    fmt.Sprintf("Player: @%s 's turn to make a move", v.Move.ID),
 		}
 	}
 	return &State{
@@ -96,8 +102,15 @@ func (e *Engine) GameState() *State {
 	}
 }
 
-func (e *Engine) TearDown() {
-	log.Printf("Game did not complete in a minute. Game is a tie.")
-	e.GameOn = false
-	e.timer.Stop()
+func (e *Engine) Forfeit(player string, channelID string) string {
+	if v, ok := e.OngoingGames[channelID]; ok {
+		if v.Alice.ID == player || v.Bob.ID == player {
+			delete(e.OngoingGames, channelID)
+			return fmt.Sprintf("Player: @%s has forfeited the game", player)
+		}
+		return "Only participating players can forfeit"
+
+	}
+	return "Game not found"
+
 }

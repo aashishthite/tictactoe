@@ -19,7 +19,6 @@ import (
 const (
 	DEFAULT_PORT = "8080"
 	timeout      = 15 * time.Second
-	SLACK_TOKEN  = ""
 )
 
 type Handlers struct {
@@ -46,17 +45,8 @@ func (h *Handlers) endpoints() *mux.Router {
 	router := mux.NewRouter().StrictSlash(false)
 
 	addHandler(router, "GET", "/", h.Health)
-	/*
-		addHandler(router, "POST", "/help", h.Help)
 
-		addHandler(router, "POST", "/start", h.Start)
-
-		addHandler(router, "POST", "/move", h.Move)
-
-		addHandler(router, "POST", "/state", h.State)
-	*/
 	addHandler(router, "POST", "/cmd", h.cmdHandler)
-	//addHandler(router, "POST", "/forfiet", h.Forfiet)
 
 	return router
 }
@@ -92,13 +82,16 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 		retval = h.Help()
 		break
 	case strings.ToLower(sc.Text) == "state":
-		retval = h.State()
+		retval = h.State(sc.ChannelId)
 		break
 	case sc.Text[0] == '@':
-		retval = h.Start(sc.UserName, sc.Text[1:len(sc.Text)])
+		retval = h.Start(sc.UserName, sc.Text[1:len(sc.Text)], sc.ChannelId)
 		break
 	case len(sc.Text) > 5 && strings.ToLower(sc.Text[0:4]) == "move":
-		retval = h.Move(sc.UserName, []rune(sc.Text)[5])
+		retval = h.Move(sc.UserName, []rune(sc.Text)[5], sc.ChannelId)
+		break
+	case strings.ToLower(sc.Text) == "forfeit":
+		retval = h.GameEngine.Forfeit(sc.UserName, sc.ChannelId)
 		break
 	default:
 		retval = "No Command Found"
@@ -132,7 +125,7 @@ func (h *Handlers) Help() string {
 		"```"
 }
 
-func (h *Handlers) Start(user1, user2 string) string {
+func (h *Handlers) Start(user1, user2, channelId string) string {
 	if user1 == user2 {
 		return "Go find friends to play tictactoe with"
 	}
@@ -153,63 +146,33 @@ func (h *Handlers) Start(user1, user2 string) string {
 		return "Not a valid user"
 	}
 
-	state, err := h.GameEngine.Start(&core.Player{ID: user1}, &core.Player{ID: user2})
+	state, err := h.GameEngine.Start(&core.Player{ID: user1}, &core.Player{ID: user2}, channelId)
 	if err != nil {
 		return "A game is still going on"
 	}
 
 	return "Starting a game: \n" + "```" + state.GameBoard + "```" + "\n" + state.Status
-	/*
-		var postReq StartGameRequest
 
-		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&postReq)
-		if err != nil {
-			ErrorRespondAndLog(w, r, err, "Failed to decode the request body", http.StatusBadRequest)
-			return
-		}
-
-
-		json.NewEncoder(w).Encode(state)
-	*/
 }
 
-func (h *Handlers) Move(user string, pos rune) string {
-	state, err := h.GameEngine.Move(&core.Player{ID: user}, pos)
+func (h *Handlers) Move(user string, pos rune, channelId string) string {
+	state, err := h.GameEngine.Move(&core.Player{ID: user}, pos, channelId)
 	if err != nil {
 		return err.Error()
 	}
-	/*var postReq MoveRequest
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&postReq)
-	if err != nil {
-		ErrorRespondAndLog(w, r, err, "Failed to decode the request body", http.StatusBadRequest)
-		return
-	}
 
-	state, err := h.GameEngine.Move(&core.Player{ID: postReq.PlayerID}, []rune(postReq.Position)[0])
-	if err != nil {
-		ErrorRespondAndLog(w, r, err, "Invalid Move", http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(state)
-	*/
 	return "```" + state.GameBoard + "```" + "\n" + state.Status
 }
 
-func (h *Handlers) State() string {
+func (h *Handlers) State(channelId string) string {
 
-	s := h.GameEngine.GameState()
+	s := h.GameEngine.GameState(channelId)
 	return "```" + s.GameBoard + "```" + "\n" + s.Status
 }
 
-/*
-func (h *Handlers) Forfiet(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "All OK")
+func (h *Handlers) Forfiet(player, channelId string) string {
+	return h.GameEngine.Forfeit(player, channelId)
 }
-*/
 
 //Helper Funcs
 
