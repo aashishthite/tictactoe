@@ -119,9 +119,10 @@ func (h *Handlers) cmdHandler(w http.ResponseWriter, r *http.Request) {
 
 // Help endpoint
 func (h *Handlers) Help() string {
-	return "```/ttt @userid : Starts a game against userid" +
-		"\n" +
-		"/ttt state      : Display state of the current game" +
+	return "```/ttt @userid : Starts a game against userid\n" +
+		"/ttt state      : Display state of the current game\n" +
+		"/ttt move <pos> : Makes a valid move to pos\n" +
+		"/ttt forfeit    : Forfeits the current game\n" +
 		"```"
 }
 

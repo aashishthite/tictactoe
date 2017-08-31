@@ -10,8 +10,6 @@ const DEFAULT_TIMEOUT = 1 * time.Minute
 
 type Engine struct {
 	OngoingGames map[string]*Game
-	//GameOn       bool //use mutex
-	//timer *time.Timer
 }
 
 type State struct {
@@ -32,7 +30,6 @@ func (e *Engine) Start(p1, p2 *Player, channelID string) (*State, error) {
 		return nil, fmt.Errorf("Game is still going on")
 	}
 	e.OngoingGames[channelID] = NewGame(p1, p2)
-	//e.timer = time.AfterFunc(DEFAULT_TIMEOUT, e.TearDown)
 
 	retval := &State{
 		GameBoard: e.OngoingGames[channelID].GameBoard.PrettyPrint(),
@@ -82,12 +79,6 @@ func (e *Engine) Move(p *Player, pos rune, channelID string) (*State, error) {
 	}
 	return retval, nil
 }
-
-/*
-func (e *Engine) Forfiet(p *Player) {
-	e.GameOn = false
-}
-*/
 
 func (e *Engine) GameState(channelID string) *State {
 	if v, ok := e.OngoingGames[channelID]; ok {
